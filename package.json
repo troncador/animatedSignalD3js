@@ -1,0 +1,25 @@
+{
+  "name": "signals_d3",
+  "version": "0.0.1",
+  "description": "Signal generator",
+  "main": "index.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "author": "Troncador",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "^3.3.6",
+    "d3": "^3.5.16",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-contrib-uglify": "^1.0.1",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-mocha-test": "^0.12.7",
+    "mocha": "^2.4.5",
+    "chai": "^3.5.0"
+  }
+}

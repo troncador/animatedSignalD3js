@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<head>
+  <meta charset='utf-8'>
+  <link rel='stylesheet' type='text/css' href='css/style.css'>
+  <link rel='stylesheet' type='text/css' href='node_modules/bootstrap/dist/css/bootstrap.min.css'>
+</head>
+
+<body>
+  <h3> Signal Input </h3>
+  Signal Formula (use i for obtain the current value):
+    <input id='signalFormula'
+      value='Math.cos(Math.PI*2*i/20)*75'
+    />
+  <br/>
+  <svg id='signalInput' class='signal' height='250' width='700'>
+  </svg>
+
+  <script src='dist/lib.min.js'></script>
+
+<p>
+    Math.cos(Math.PI*2*i/200)*(Math.cos(Math.PI*2*i/40)+Math.random()/2)*75
+</p>
+<p>
+    Math.cos(Math.PI*2*i/200)*(Math.cos(Math.PI*2*i/40)+Math.random()/20)*75
+</p>
+  <script>
+    var input = new Graph('#signalInput',100)
+      , signalFormula = d3.select('#signalFormula')
+      , strFormula = 'Math.cos(Math.PI*2*i/20)*75'
+      ;
+
+    function changeInput(value){
+      strFormula = value;
+    }
+
+    signalFormula.attr('value' , strFormula)
+    signalFormula.attr('onchange', 'changeInput(this.value)');
+
+    var i = 0;
+    setInterval( function(){
+      var value = 0;
+      try {
+          value = eval(strFormula);
+          signalFormula.classed('field-error', false);
+      } catch (e) {
+          signalFormula.classed('field-error', true);
+      }
+      input.step(value);
+      i++;
+    },40)
+  </script>
+
+
+</body>
+</htlm>
