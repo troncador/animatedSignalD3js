@@ -1,6 +1,16 @@
 module.exports = function(grunt) {
 
   grunt.initConfig({
+    jscs: {
+      src: 'lib/**/*.js',
+        options: {
+        config: ".jscsrc",
+        esnext: false, // If you use ES6 http://jscs.info/overview.html#esnext
+        verbose: true,
+        fix: true, // Autofix code style violations when possible.
+        requireCurlyBraces: [ 'if' ]
+      }
+    },
     jshint: {
       all: ['Gruntfile.js', 'lib/**/*.js', 'test/**/*.js']
     },
@@ -52,10 +62,12 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-mocha-test');
 
   //Construct
+  grunt.loadNpmTasks('grunt-jscs');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
+
 
   grunt.registerTask('default', ['mochaTest']);
 
