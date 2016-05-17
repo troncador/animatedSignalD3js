@@ -11,6 +11,9 @@
   "dependencies": {
     "bootstrap": "^3.3.6",
     "d3": "^3.5.16",
+    "jquery": "^2.2.3",
+    "jquery-knob": "^1.2.11",
+    "ng-knob": "^1.0.1",
     "underscore": "^1.8.3"
   },
   "devDependencies": {
