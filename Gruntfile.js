@@ -4,8 +4,8 @@ module.exports = function(grunt) {
         'lib/**/*.js',
         'node_modules/underscore/underscore.js',
         'node_modules/d3/d3.js',
-        'node_modules/jquery/dist/jquery.js',
-        'node_modules/jquery-knob/js/jquery.knob.js'
+        //'node_modules/jquery/dist/jquery.js',
+        //'node_modules/jquery-knob/js/jquery.knob.js'
         ],
       srcCSS =  [
         'less/style.less',

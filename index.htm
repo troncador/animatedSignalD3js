@@ -12,11 +12,12 @@
     />
   <br/>
 
-
-  <svg id='signalInput' class='signal' height='350' width='350'>
-  </svg>
-
-
+  <div id ='c1'>
+    <div id='c2'>
+      <svg id='signalInput' class='signal' height='300' width='350'>
+      </svg>
+    </div>
+  </div>
 <input type="text" value="75" class="dial"
   data-width="75"
   data-fgColor="#ffec03"
@@ -35,10 +36,12 @@
     Math.cos(Math.PI*2*i/200)*(Math.cos(Math.PI*2*i/40)+Math.random()/20)*75
 </p>
 
-  <img src='osciloscope.png' />
+
   <script>
-    $(".dial").knob();
-    var input = new Graph('#signalInput',100)
+    //$(".dial").knob();
+    var svg = d3.select('#signalInput')
+      , input = new Graph(svg, 20, 100)
+      , grid = new GraphGrid(svg, [20, 20, 20, 20])
       , signalFormula = d3.select('#signalFormula')
       , strFormula = 'Math.cos(Math.PI*2*i/20)*75'
       ;
