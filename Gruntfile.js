@@ -1,20 +1,15 @@
 module.exports = function(grunt) {
-  var tasks = ['jshint', 'jscs', 'concat','uglify', 'less:dev'],
+  var tasks = ['jshint', 'jscs', 'concat','uglify', 'copy', 'less:dev'],
       srcJS = [
-        'lib/**/*.js',
         'node_modules/underscore/underscore.js',
         'node_modules/d3/d3.js',
-        //'node_modules/jquery/dist/jquery.js',
-        //'node_modules/jquery-knob/js/jquery.knob.js'
+        'node_modules/jim-knopf/dist/knob.js',
+        'lib/**/*.js'
         ],
       srcCSS =  [
-        'less/style.less',
-        'node_modules/bootstrap/less/bootstrap.less'
+        'less/*.less'
         ]
       ;
-
-
-
 
   grunt.initConfig({
     jscs: {
@@ -31,7 +26,7 @@ module.exports = function(grunt) {
     },
     watch: {
       scripts: {
-        files: ['lib/**/*.js', 'less/*.less'],
+        files: ['lib/**/*.js', 'less/*.less', 'Gruntfile.js'],
         tasks: tasks,
         options: {
           spawn: false,
@@ -91,6 +86,22 @@ module.exports = function(grunt) {
         },
         src: ['test/*.js']
       }
+    },
+    copy: {
+      main: {
+        expand: true,
+        src: ['node_modules/font-awesome/fonts/*', 'node_modules/boostrap/fonts/*'],
+        dest: 'fonts/',
+        flatten: true,
+        filter: 'isFile'
+      },
+      math: {
+        expand: true,
+        src: 'node_modules/mathjs/dist/math.min.js',
+        dest: 'dist/',
+        flatten: true,
+        filter: 'isFile'
+      }
     }
   });
 
@@ -102,7 +113,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-less');
-
+  grunt.loadNpmTasks('grunt-contrib-copy');
   //Testing
   grunt.loadNpmTasks('grunt-mocha-test');
 
