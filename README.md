@@ -1,7 +1,7 @@
 ## Animated Signal with D3.js
 
 It is a simple javascript signal graph using d3.js
-![Screenshoot of the application](https://github.com/troncador/animatedSignalD3js/raw/master/screenshoot.gif "Screenshoot of the application")
+[example](http://troncador.github.io/animatedSignalD3js/ "Graph Example")
 
 
 
