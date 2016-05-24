@@ -97,7 +97,7 @@ module.exports = function(grunt) {
       },
       math: {
         expand: true,
-        src: 'node_modules/mathjs/dist/math.min.js',
+        src: 'node_modules/mathjs/dist/*',
         dest: 'dist/',
         flatten: true,
         filter: 'isFile'
