@@ -11594,5 +11594,449 @@ Ui.El.Arc.prototype.getCoords = function(angle) {
     };
   }
 };
+;(function(exports, window) {
+  'use strict';
+
+  var Graph = function(container, dimension, margin, refreshInterval) {
+    var d3svg = container
+            .classed('signalGraph', true)
+            .classed('styleRetro', true)
+            .append('div')
+            .append('div')
+            .append('svg')
+            .attr('width', dimension.width)
+            .attr('height', dimension.height),
+        d3signal = d3svg.append('g')
+            .attr('id', 'signal'),
+        d3svgPath = d3signal.append('path')
+            .attr('class', 'signal'),
+        numberPoint = 270
+        ;
+
+    this.__margin = margin;
+    this.__transformationRangeX = {base: 0, mult: 1};
+    this.__transformationRangeY = {base: 0, mult: 1};
+    this.__baseRangeX = {
+      min: Math.round(numberPoint / 2 - 15),
+      max: Math.round(numberPoint / 2 + 15)
+    };
+
+    this.__baseRangeY = {min:-4, max: 4};
+    this.__refreshInterval = refreshInterval;
+    this.__indexRefreshInterval = 0;
+
+    this.__dimension = dimension;
+
+    new Graph.Grid(d3svg, dimension, margin);
+    this.__data = new Graph.Data(numberPoint, this.__baseRangeX,
+      this.__baseRangeY);
+
+    this.__d3svgPath = d3svgPath;
+    this.changeYScale(this.__baseRangeY);
+    this.changeXScale(this.__baseRangeX);
+    this.updateLine();
+  };
+  Graph.prototype = {
+    step: function(y, dx) {
+      this.__indexRefreshInterval++;
+      this.__data.insert(y);
+      if (this.__indexRefreshInterval > this.__refreshInterval) {
+        this.__indexRefreshInterval = 0;
+        this.updateLine();
+      }
+    },
+    changeVoltsByDiv: function(value) {
+      var trans = this.__transformationRangeY,
+          range;
+      trans.mult = value;
+
+      range = {
+        min: this.__baseRangeY.min * trans.mult + trans.base * trans.mult,
+        max: this.__baseRangeY.max * trans.mult + trans.base * trans.mult
+      };
+
+      this.changeYScale(range);
+      this.__data.setRangeY(range);
+    },
+    changeVoltsOffset: function(value) {
+      var trans = this.__transformationRangeY,
+          range;
+      trans.base = value;
+
+      range = {
+        min: this.__baseRangeY.min * trans.mult + trans.base * trans.mult,
+        max: this.__baseRangeY.max * trans.mult + trans.base * trans.mult
+      };
+
+      this.changeYScale(range);
+      this.__data.setRangeY(range);
+    },
+    changeTimeByDiv: function(value) {
+      var trans = this.__transformationRangeX,
+          middle = (this.__baseRangeX.max + this.__baseRangeX.min) / 2,
+          width = this.__baseRangeX.max - this.__baseRangeX.min,
+          range
+          ;
+      trans.mult = value;
+      range = {
+        min: middle - trans.mult / 2 * width + trans.base * width,
+        max: middle + trans.mult / 2 * width + trans.base * width
+      };
+
+      this.changeXScale(range);
+      this.__data.setRangeX(range);
+    },
+    changeTimeOffset: function(value) {
+      var trans = this.__transformationRangeX,
+          middle = (this.__baseRangeX.max + this.__baseRangeX.min) / 2,
+          width = this.__baseRangeX.max - this.__baseRangeX.min,
+          range
+          ;
+      trans.base = value;
+
+      range = {
+        min: middle - trans.mult / 2 * width + trans.base * width,
+        max: middle + trans.mult / 2 * width + trans.base * width
+      };
+
+      this.changeXScale(range);
+      this.__data.setRangeX(range);
+    },
+    updateLine: function() {
+      var _this = this,
+          interpolation = d3.svg.line()
+            .x(function(value, index) { return _this.__axisXScale(index); })
+            .y(function(value, index) { return _this.__axisYScale(value); })
+            .interpolate('monotone'),
+          data = this.__data.get()
+          ;
+      this.__d3svgPath.attr('d', interpolation(data));
+    },
+    changeYScale: function(domain) {
+      var dimension = this.__dimension,
+          margin = this.__margin
+          ;
+      this.__axisYScale = d3.scale.linear()
+         .domain([domain.max, domain.min])
+         .range([margin.top, dimension.height - margin.bottom])
+         ;
+    },
+    changeXScale: function(domain) {
+      var dimension = this.__dimension,
+          margin = this.__margin
+          ;
+      this.__axisXScale = d3.scale.linear()
+        .domain([0, domain.max - domain.min - 1])
+        .range([margin.left, dimension.width - margin.right])
+        ;
+    }
+  };
+
+  window.Graph = Graph;
+
+})(this, window);
+;(function(exports, window) {
+'use strict';
+
+var Data = function(intSize, rangeX, rangeY) {
+  var defaultValue = 0,
+      _this = this
+      ;
+  this.__rangeX = rangeX;
+  this.__rangeY = rangeY;
+  this.__data = new Array(intSize);
+
+  _.each(_.range(intSize), function(value, number) {
+    _this.insert(defaultValue);
+  });
+};
+
+Data.prototype = {
+  insert: function(intValue) {
+    this.__data.pop();
+    this.__data.unshift(intValue);
+  },
+  __constrainData: function(intValue) {
+    var min = this.__rangeY.min,
+        max = this.__rangeY.max
+        ;
+    if (intValue > max) {
+      intValue = max;
+    }
+    if (intValue < min) {
+      intValue = min;
+    }
+    return intValue;
+  },
+  get: function() {
+    var min = this.__rangeX.min,
+        max = this.__rangeX.max
+        ;
+    return _.map(this.__data.slice(min, max), this.__constrainData, this);
+  },
+  max: function() {
+    return _.max(this.__data);
+  },
+  min: function() {
+    return _.min(this.__data);
+  },
+  setRangeY: function(rangeY) {
+    if (rangeY.max < rangeY.min) {
+      throw new Error('range Y incorrect');
+    }
+    this.__rangeY = rangeY;
+  },
+  setRangeX: function(rangeX) {
+    if (rangeX.max < rangeX.min ||
+        rangeX.min < 0 ||
+        rangeX.max > this.__data.length) {
+      throw new Error('range X incorrect');
+    }
+    this.__rangeX = rangeX;
+  }
+};
+
+if (window.Graph === undefined) {
+  window.Graph = {};
+}
+window.Graph.Data = Data;
+
+})(this, window);
+;(function(exports, window) {
+  'use strict';
+
+  var Grid = function(d3svg, dimension, margin) {
+    this.__d3grid = d3svg.append('g')
+      .attr('id', 'signalGrid');
+    this.__intWidth = d3svg.attr('width');
+    this.__intHeight = d3svg.attr('height');
+    this.__margin = margin;
+    this.__dimension = dimension;
+
+    this.__setDivisionGrid(10, 8);
+    this.__drawLines(true);
+    this.__drawLines(false);
+
+    this.__setSubDivision(5, 5);
+
+    this.__drawSubLines(true, 4, 8);
+    this.__drawSubLines(false, 5, 8);
+
+  };
+
+  Grid.prototype = {
+    __drawSubLines: function(isX, intLevel, intSize) {
+      var scalePerpendicular = isX ?  this.__scaleY : this.__scaleX,
+          scaleSub = isX ? this.__scaleSubX : this.__scaleSubY,
+          min = scalePerpendicular(intLevel) - intSize / 2,
+          max = scalePerpendicular(intLevel) + intSize / 2,
+          data = isX ? this.__dataSubX : this.__dataSubY;
+
+      this.__d3grid.selectAll('gride')
+        .data(data())
+        .enter()
+        .append('line')
+        .attr('class', 'gride')
+        .attr('x1', isX ? scaleSub : min)
+        .attr('x2', isX ? scaleSub : max)
+        .attr('y1', isX ? min : scaleSub)
+        .attr('y2', isX ? max : scaleSub)
+        ;
+    },
+    __constructSubData: function(intMax, intSubMax) {
+      var range = _.bind(_.range, undefined, intMax * intSubMax),
+          condition = function(d) {
+            return (d % intSubMax) !== 0;
+          },
+          filter = _.partial(_.filter, _, condition)
+          ;
+
+      return _.compose(filter, range);
+    },
+    __setSubDivision: function(intSubMaxX, intSubMaxY) {
+      var intMaxX = this.__intMaxX,
+          intMaxY = this.__intMaxY,
+          margin = this.__margin,
+          dimension = this.__dimension
+      ;
+      this.__dataSubY = this.__constructSubData(intMaxY, intSubMaxY);
+
+      this.__dataSubX = this.__constructSubData(intMaxX, intSubMaxX);
+
+      this.__scaleSubX = d3.scale.linear()
+        .domain([0, intMaxX * intSubMaxX])
+        .range([margin.left, dimension.width - margin.right]);
+
+      this.__scaleSubY = d3.scale.linear()
+        .domain([0, intMaxY * intSubMaxY])
+        .range([margin.top, dimension.height - margin.bottom]);
+
+    },
+    __setDivisionGrid: function(intMaxX, intMaxY) {
+      var margin = this.__margin,
+          dimension = this.__dimension
+      ;
+      this.__intMaxX = intMaxX;
+      this.__intMaxY = intMaxY;
+
+      this.__scaleX = d3.scale.linear()
+         .domain([0, intMaxX])
+         .range([margin.left, dimension.width - margin.right]);
+      this.__scaleY = d3.scale.linear()
+         .domain([0, intMaxY])
+         .range([margin.top, dimension.height - margin.bottom]);
+    },
+    __drawLines: function(isX) {
+      var scaleX = this.__scaleX,
+          scaleY = this.__scaleY,
+          intMaxX = this.__intMaxX,
+          intMaxY = this.__intMaxY,
+          intMax = isX ? intMaxY : intMaxX
+      ;
+
+      this.__d3grid.selectAll('gride')
+        .data(d3.range(intMax + 1))
+        .enter()
+        .append('line')
+        .attr('class', 'gride')
+        .attr('x1', isX ? scaleX(0) : scaleX)
+        .attr('y1', isX ? scaleY : scaleY(0))
+        .attr('x2', isX ? scaleX(intMaxX) : scaleX)
+        .attr('y2', isX ? scaleY : scaleY(intMaxY))
+        ;
+    }
+  };
+
+  if (window.Graph === undefined) {
+    window.Graph = {};
+  }
+  window.Graph.Grid = Grid;
+
+})(this, window);
+;(function() {
+  'use strict';
+  var init = function() {
+    var container = d3.select('#signalInput'),
+        voltsByDiv = d3.select('#voltsByDiv'),
+        voltsOffset = d3.select('#voltsOffset'),
+        timeOffset = d3.select('#timeOffset'),
+        timeByDiv = d3.select('#timeByDiv'),
+        styleRetro = d3.select('#styleRetro'),
+        voltByDivOptions = [5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01],
+        voltOffsetOptions = [5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5],
+        timeByDivOptions = [3, 2.75, 2.5, 2.25,  2, 1.5, 1.25, 1, 0.75, 0.5, 0.25],
+        timeOffsetOptions = [0.5, 0.4, 0.3, 0.2, 0.1, 0, -0.1, -0.2, -0.3, -0.4, -0.5],
+        input = new Graph(container, {width:350, height:300},
+          {top:20, right:20, bottom:20, left:20 }, 40),
+        signalFormula = d3.select('#signalFormula'),
+        strFormula = signalFormula.attr('value'),
+        i = 0
+        ;
+
+    // VoltsByDiv
+    voltsByDiv.attr('data-labels', voltByDivOptions)
+              .on('change', function() {
+                input.changeVoltsByDiv(voltByDivOptions[this.value]);
+              });
+    new Knob(voltsByDiv.node(), new OsciloscopeKnov())
+      .update(voltByDivOptions.indexOf(1));
+
+    // VoltsOffset
+    voltsOffset.attr('data-labels', voltOffsetOptions)
+               .on('change', function() {
+                 input.changeVoltsOffset(voltOffsetOptions[this.value]);
+               });
+    new Knob(voltsOffset.node(), new OsciloscopeKnov())
+      .update(voltOffsetOptions.indexOf(0));
+
+    // TimeByDiv
+    timeByDiv.attr('data-labels', timeByDivOptions)
+              .on('change', function() {
+                input.changeTimeByDiv(timeByDivOptions[this.value]);
+              });
+    new Knob(timeByDiv.node(), new OsciloscopeKnov())
+      .update(timeByDivOptions.indexOf(1));
+
+    // TimeOffset
+    timeOffset.attr('data-labels', timeOffsetOptions)
+               .on('change', function() {
+                 input.changeTimeOffset(timeOffsetOptions[this.value]);
+               });
+    new Knob(timeOffset.node(), new OsciloscopeKnov())
+      .update(timeOffsetOptions.indexOf(0));
+
+    // Signal
+    signalFormula.on('change', function() {
+      strFormula = this.value;
+    });
+
+    // styleRetro
+    styleRetro.on('click', function() {
+      var i = styleRetro.select('i');
+      if (i.classed('fa-check')) {
+        i.classed('fa-check', false);
+        i.classed('fa-times', true);
+        container.classed('styleRetro', false);
+        container.classed('styleNoRetro', true);
+
+      } else {
+        i.classed('fa-check', true);
+        i.classed('fa-times', false);
+        container.classed('styleRetro', true);
+        container.classed('styleNoRetro', false);
+      }
+    });
+
+    setInterval(function() {
+      var value = 0;
+      try {
+        value = math.eval(strFormula,{i:i});
+        signalFormula.classed('field-error', false);
+      } catch (e) {
+        signalFormula.classed('field-error', true);
+      }
+      input.step(value);
+      i++;
+    }, 1);
+  };
+
+  this.init = init;
+
+}.call(this));
+;(function() {
+  'use strict';
+
+  var OsciloscopeKnov = function() {} ;
+
+  OsciloscopeKnov.prototype = Object.create(Ui.prototype);
+
+  OsciloscopeKnov.prototype.createElement = function() {
+    var scaleOption = {
+        drawScale: false,
+        drawDial: true,
+        radius: this.width / 2.6
+      },
+      scale = new Ui.Scale(this.merge(this.options, scaleOption)),
+      pointer = new Ui.Pointer({
+        type: 'Rect',
+        pointerWidth: 3,
+        pointerHeight: this.width / 5,
+        offset: this.width / 2 - this.width / 3.3 - this.width / 10
+      }),
+       circle = new Ui.El.Circle(this.width / 3.3, this.width / 2,
+          this.height / 2);
+
+    Ui.prototype.createElement.apply(this, arguments);
+
+    this.el.node.appendChild(circle.node);
+    //this.addComponent(new Ui.Text());
+    this.addComponent(pointer);
+    this.addComponent(scale);
+    this.el.node.setAttribute('class', 'osciloscopeKnov');
+
+  };
+  this.OsciloscopeKnov = OsciloscopeKnov;
+
+}.call(this));
 
 //# sourceMappingURL=lib.js.map
